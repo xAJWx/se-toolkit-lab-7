@@ -79,6 +79,12 @@ class LMSClient:
 
     def trigger_sync(self) -> dict:
         """Trigger a data sync from the autochecker."""
-        response = self._client.post("/pipeline/sync")
-        response.raise_for_status()
-        return response.json()
+        try:
+            response = self._client.post("/pipeline/sync")
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPStatusError as e:
+            # Autochecker API may be unavailable - return graceful error
+            return {"error": f"Sync failed: HTTP {e.response.status_code}. The autochecker service may be temporarily unavailable."}
+        except httpx.ConnectError as e:
+            return {"error": "Sync failed: Cannot connect to autochecker service. Please try again later."}
